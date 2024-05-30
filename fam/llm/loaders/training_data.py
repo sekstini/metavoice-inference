@@ -3,10 +3,10 @@ from typing import Any, Mapping
 
 import julius
 import torch
+import torchaudio
 import math
 import numpy as np
 import pandas as pd
-from audiocraft.data.audio import audio_read
 from encodec import EncodecModel
 from torch.utils.data import DataLoader, Dataset
 
@@ -96,13 +96,13 @@ class DynamicComputeDataset(Dataset):
         return _tokens.detach().cpu().numpy()
 
     def _extract_encodec_tokens(self, audio_path: str):
-        wav, sr = audio_read(audio_path)
+        wav, sr = torchaudio.load(audio_path)
         if sr != MBD_SAMPLE_RATE:
             wav = julius.resample_frac(wav, sr, MBD_SAMPLE_RATE)
 
         # Convert to mono and fix dimensionality
         if wav.ndim == 2:
-            wav = wav.mean(axis=0, keepdims=True)
+            wav = wav.mean(dim=0, keepdim=True)
         wav = wav.unsqueeze(0)  # Add batch dimension
 
         wav = wav.to(self.device)

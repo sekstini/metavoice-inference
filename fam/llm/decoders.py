@@ -7,10 +7,7 @@ from typing import Callable, Optional, Union
 
 import julius
 import torch
-from audiocraft.data.audio import audio_read, audio_write
-from audiocraft.models import MultiBandDiffusion  # type: ignore
-
-mbd = MultiBandDiffusion.get_mbd_24khz(bw=6)  # 1.5
+import torchaudio
 
 
 class Decoder(ABC):
@@ -38,13 +35,7 @@ class EncodecDecoder(Decoder):
         os.makedirs(self.output_dir, exist_ok=True)
 
     def _save_audio(self, name: str, wav: torch.Tensor):
-        audio_write(
-            name,
-            wav.squeeze(0).cpu(),
-            self._mbd_sample_rate,
-            strategy="loudness",
-            loudness_compressor=True,
-        )
+        torchaudio.save(name, wav.squeeze(0).cpu(), self._mbd_sample_rate)
 
     def get_tokens(self, audio_path: str) -> list[list[int]]:
         """
@@ -52,7 +43,7 @@ class EncodecDecoder(Decoder):
         limited codebook reconstruction or sampling from second stage model only).
         """
         pass
-        wav, sr = audio_read(audio_path)
+        wav, sr = torchaudio.load(audio_path)
         if sr != self._mbd_sample_rate:
             wav = julius.resample_frac(wav, sr, self._mbd_sample_rate)
         if wav.ndim == 2:
