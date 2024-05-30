@@ -12,6 +12,8 @@ import torchaudio
 from vocos import Vocos
 from vocos.feature_extractors import EncodecFeatures
 
+from fam.llm.utils import normalize_audio
+
 class Decoder(ABC):
     @abstractmethod
     def decode(self, tokens: list[int], ref_audio_path: Optional[str] = None, causal: Optional[bool] = None):
@@ -41,7 +43,8 @@ class EncodecDecoder(Decoder):
         os.makedirs(self.output_dir, exist_ok=True)
 
     def _save_audio(self, name: str, wav: torch.Tensor):
-        torchaudio.save(f"{name}.wav", wav.squeeze(0).cpu(), self.sample_rate, backend="soundfile")
+        wav = normalize_audio(wav[0].cpu(), strategy="loudness", loudness_headroom_db=22, loudness_compressor=True, sample_rate=self.sample_rate)
+        torchaudio.save(f"{name}.wav", wav, self.sample_rate, backend="soundfile")
 
     def get_tokens(self, audio_path: str) -> list[list[int]]:
         """
