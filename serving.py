@@ -133,7 +133,6 @@ if __name__ == "__main__":
     GlobalState.tts = TTS(
         seed=GlobalState.config.seed,
         quantisation_mode=GlobalState.config.quantisation_mode,
-        telemetry_origin="api_server",
     )
 
     app.add_middleware(
