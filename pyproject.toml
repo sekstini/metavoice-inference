@@ -1,44 +1,37 @@
-[tool.poetry]
+[project]
 name = "fam"
 version = "0.1.0"
 description = "Foundational model for text to speech"
 authors = []
 readme = "README.md"
 
-[tool.poetry.dependencies]
-python = "^3.10"
-torch = "^2.1.0"
-torchaudio = "^2.1.0"
-librosa = "^0.10.1"
-tqdm = "^4.66.2"
-tiktoken = "==0.5.1"
-numpy = "^1.26.4"
-ninja = "^1.11.1"
-fastapi = "^0.110.0"
-uvicorn = "^0.27.1"
-tyro = "^0.7.3"
-deepfilternet = "^0.5.6"
-pydub = "^0.25.1"
-gradio = "^4.20.1"
-huggingface_hub = "^0.21.4"
-click = "^8.1.7"
-wandb = { version = "^0.16.4", optional = true }
-python-dotenv = "^1.0.1"
+dependencies = [
+  "torch>=2.3",
+  "torchaudio",
+  "vocos",
+  "librosa",
+  "tqdm",
+  "tiktoken",
+  "numpy",
+  "ninja",
+  "fastapi",
+  "uvicorn",
+  "tyro",
+  "deepfilternet",
+  "pydub",
+  "gradio",
+  "huggingface_hub",
+  "click",
+  "python-dotenv",
+  "julius",
+]
 
-[tool.poetry.dev-dependencies]
-pre-commit = "^3.7.0"
-pytest = "^8.0.2"
-ipdb = "^0.13.13"
-
-[tool.poetry.extras]
-observable = ["wandb"]
-
-[tool.poetry.scripts]
-finetune = "fam.llm.finetune:main"
+[project.optional-dependencies]
+dev = ["pre-commit>=3.7.0", "pytest>=8.0.2", "ipdb>=0.13.13", "wandb>=0.12.4"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [tool.black]
 line-length = 120
@@ -55,4 +48,3 @@ exclude = '''
 
 [tool.isort]
 profile = "black"
-
