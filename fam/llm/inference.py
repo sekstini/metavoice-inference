@@ -330,9 +330,9 @@ class Model:
                     for tokens in b_tokens:
                         try:
                             to_return.append(self.decoder.decode(tokens=tokens.tolist(), causal=False))
-                        except Exception as e:
-                            print("failed to run MBD.")
-                            print(f"reason: {str(e)}")
+                        except Exception:
+                            import traceback
+                            traceback.print_exc()
                             to_return.append(None)
 
                 return to_return

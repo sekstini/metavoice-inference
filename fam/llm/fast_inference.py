@@ -86,14 +86,17 @@ class TTS:
         )
         self.enhancer = get_enhancer("df")
 
+        should_compile = os.getenv("COMPILE", "1") == "1"
+        should_compile_prefill = should_compile and os.getenv("COMPILE_PREFILL", "1") == "1"
+
         self.precision = {"float16": torch.float16, "bfloat16": torch.bfloat16}[self._dtype]
         self.model, self.tokenizer, self.smodel, self.model_size = build_model(
             precision=self.precision,
             checkpoint_path=Path(self._first_stage_ckpt),
             spk_emb_ckpt_path=Path(f"{self._model_dir}/speaker_encoder.pt"),
             device=self._device,
-            compile=True,
-            compile_prefill=True,
+            compile=should_compile,
+            compile_prefill=should_compile_prefill,
             quantisation_mode=quantisation_mode,
         )
         self._seed = seed

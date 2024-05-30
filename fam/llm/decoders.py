@@ -3,12 +3,14 @@ import os
 import pathlib
 import uuid
 from abc import ABC, abstractmethod
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, cast
 
 import julius
 import torch
 import torchaudio
 
+from vocos import Vocos
+from vocos.feature_extractors import EncodecFeatures
 
 class Decoder(ABC):
     @abstractmethod
@@ -23,10 +25,14 @@ class EncodecDecoder(Decoder):
         data_adapter_fn: Callable[[list[list[int]]], tuple[list[int], list[list[int]]]],
         output_dir: str,
     ):
-        self._mbd_sample_rate = 24_000
+        self.sample_rate = 24_000
         self._end_of_audio_token = 1024
         self._num_codebooks = 8
-        self.mbd = mbd
+        self.vocos = Vocos.from_pretrained("charactr/vocos-encodec-24khz").to("cuda")
+        self.feature_extractor = cast(EncodecFeatures, self.vocos.feature_extractor)
+
+        self.feature_extractor.encodec.set_target_bandwidth(6.0)
+        self.bandwidth_id = torch.tensor([2], device="cuda")
 
         self.tokeniser_decode_fn = tokeniser_decode_fn
         self._data_adapter_fn = data_adapter_fn
@@ -35,23 +41,20 @@ class EncodecDecoder(Decoder):
         os.makedirs(self.output_dir, exist_ok=True)
 
     def _save_audio(self, name: str, wav: torch.Tensor):
-        torchaudio.save(name, wav.squeeze(0).cpu(), self._mbd_sample_rate)
+        torchaudio.save(f"{name}.wav", wav.squeeze(0).cpu(), self.sample_rate, backend="soundfile")
 
     def get_tokens(self, audio_path: str) -> list[list[int]]:
         """
         Utility method to get tokens from audio. Useful when you want to test reconstruction in some form (e.g.
         limited codebook reconstruction or sampling from second stage model only).
         """
-        pass
-        wav, sr = torchaudio.load(audio_path)
-        if sr != self._mbd_sample_rate:
-            wav = julius.resample_frac(wav, sr, self._mbd_sample_rate)
+        wav, sr = torchaudio.load(audio_path, backend="soundfile")
+        if sr != self.sample_rate:
+            wav = julius.resample_frac(wav, sr, self.sample_rate)
         if wav.ndim == 2:
             wav = wav.unsqueeze(1)
         wav = wav.to("cuda")
-        tokens = self.mbd.codec_model.encode(wav)
-        tokens = tokens[0][0]
-
+        tokens = self.feature_extractor.get_encodec_codes(wav).squeeze(0, 1)
         return tokens.tolist()
 
     def decode(
@@ -73,7 +76,8 @@ class EncodecDecoder(Decoder):
             return tokens
         else:
             with torch.amp.autocast(device_type="cuda", dtype=torch.float32):
-                wav = self.mbd.tokens_to_wav(tokens)
+                features = self.vocos.codes_to_features(tokens.transpose(0, 1))
+                wav = self.vocos.decode(features, bandwidth_id=self.bandwidth_id).unsqueeze(1)
             # NOTE: we couldn't just return wav here as it goes through loudness compression etc :)
 
         if wav.shape[-1] < 9600:
@@ -85,8 +89,10 @@ class EncodecDecoder(Decoder):
             wav_file_name = self.output_dir / f"synth_{datetime.now().strftime('%y-%m-%d--%H-%M-%S')}_{text.replace(' ', '_')[:25]}_{uuid.uuid4()}"
             self._save_audio(wav_file_name, wav)
             return wav_file_name
-        except Exception as e:
-            print(f"Failed to save audio! Reason: {e}")
+        except Exception:
+            import traceback
+            print("Failed to save audio! Traceback:")
+            traceback.print_exc()
 
             wav_file_name = self.output_dir / f"synth_{datetime.now().strftime('%y-%m-%d--%H-%M-%S')}_{uuid.uuid4()}"
             self._save_audio(wav_file_name, wav)

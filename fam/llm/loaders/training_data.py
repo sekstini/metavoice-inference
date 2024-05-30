@@ -96,7 +96,7 @@ class DynamicComputeDataset(Dataset):
         return _tokens.detach().cpu().numpy()
 
     def _extract_encodec_tokens(self, audio_path: str):
-        wav, sr = torchaudio.load(audio_path)
+        wav, sr = torchaudio.load(audio_path, backend="soundfile")
         if sr != MBD_SAMPLE_RATE:
             wav = julius.resample_frac(wav, sr, MBD_SAMPLE_RATE)
 
