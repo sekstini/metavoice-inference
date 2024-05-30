@@ -1,6 +1,6 @@
 # MetaVoice-1B
 
-
+## NOTE: README is currently out of sync. We don't use Poetry, just `pip install .`
 
 [![Playground](https://img.shields.io/static/v1?label=Try&message=Playground&color=fc4982&url=https://ttsdemo.themetavoice.xyz/)](https://ttsdemo.themetavoice.xyz/)
 <a target="_blank" style="display: inline-block; vertical-align: middle" href="https://colab.research.google.com/github/metavoiceio/metavoice-src/blob/main/colab_demo.ipynb">
