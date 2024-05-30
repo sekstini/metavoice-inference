@@ -87,7 +87,7 @@ class TTS:
         self.enhancer = get_enhancer("df")
 
         should_compile = os.getenv("COMPILE", "1") == "1"
-        should_compile_prefill = should_compile and os.getenv("COMPILE_PREFILL", "1") == "1"
+        should_compile_prefill = should_compile and os.getenv("COMPILE_PREFILL", "0") == "1"
 
         self.precision = {"float16": torch.float16, "bfloat16": torch.bfloat16}[self._dtype]
         self.model, self.tokenizer, self.smodel, self.model_size = build_model(
